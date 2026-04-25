@@ -1,0 +1,85 @@
+PROMPT PARA GERAÇÃO DO PROJETO CAFÉ AROMA - COM IMPRESSÃO TÉRMICA
+# CONTEXTO DO PROJETO
+Desenvolver o sistema "Café Aroma", uma cafeteria inteligente. O projeto deve servir como base pedagógica para alunos de Técnico em Ciência de Dados e Desenvolvimento de Sistemas (1º ano). O objetivo é unir uma interface de vendas funcional (Front-end) com um motor de análise preditiva (Back-end) e automação de hardware (Impressão de Recibos).
+
+## BIBLIOTECA [PYTHON / FLASK] PARA A API
+IMPORTANTE SOBRE [IA, MENSAGERIA E HARDWARE]:
+
+Utilize scikit-learn para o modelo de regressão linear (previsão de demanda).
+
+Utilize pika para integração com RabbitMQ.
+
+NOVO: Utilize a biblioteca python-escpos para comunicação com a impressora térmica.
+
+## STACK TECNOLÓGICA
+
+Front-end: HTML5, CSS3 e JavaScript (ES6+).
+
+Back-end: Python 3.10+ com Flask.
+
+Banco de Dados: PostgreSQL.
+
+Mensageria: RabbitMQ.
+
+Impressão: Protocolo ESC/POS para LUOGAO VS-5890C (58mm).
+
+## ESTRUTURA DE PASTAS
+/root
+/app
+/models (Classes Python/SQL)
+/controllers (Rotas Flask)
+/services
+analytics.py (IA)
+messaging.py (RabbitMQ)
+printer_service.py (Lógica de Impressão)
+/static (css/ js/)
+/templates (index.html)
+
+## BANCO DE DADOS — SCHEMA COMPLETO (PostgreSQL)
+
+usuarios, 2. produtos, 3. pedidos, 4. itens_pedido, 5. estoque.
+
+## SERVIÇO DE [IMPRESSÃO TÉRMICA] — app/services/printer_service.py
+gerar_recibo(dados_pedido: dict)
+
+Configuração Técnica: Impressora LUOGAO VS-5890C, largura de papel 58mm.
+
+Layout do Cupom: 1. Cabeçalho centralizado: "CAFÉ AROMA".
+2. Data e Hora do pedido.
+3. Lista de itens (Nome do item, Qtd, Preço).
+4. Total em Negrito.
+5. QR Code no final com o ID do pedido.
+6. Comando de corte de papel (Cut) ou avanço de linha (Feed).
+
+## SERVIÇO DE [MENSAGERIA] — app/services/messaging.py
+enviar_pedido_fila(dados_pedido: dict)
+
+Ao receber o pedido, deve publicar no RabbitMQ e, simultaneamente, disparar o printer_service.
+
+## ROTAS DO BACK-END
+
+POST /api/pedidos: Recebe o pedido, salva no DB, envia para a fila RabbitMQ e imprime o cupom na LUOGAO.
+
+## FRONT-END — REGRAS DETALHADAS
+
+Visual: Tons de marrom (#4E342E) e bege (#F5F5DC).
+
+Funcionalidade: O usuário clica em "Finalizar", o JS faz o POST e o sistema responde com sucesso enquanto a impressora física emite o comprovante.
+
+## ARQUIVOS DE CONFIGURAÇÃO
+
+data/config.json: Incluir campos para PRINTER_INTERFACE (ex: USB ou Network) e PRINTER_ID.
+
+requirements.txt: Incluir python-escpos.
+
+REGRAS GERAIS DE QUALIDADE
+
+Restrição de Largura: O texto do recibo deve ser formatado para no máximo 32 caracteres por linha (limite do papel de 58mm).
+
+Tratamento de Erros: Se a impressora estiver offline, o sistema deve registrar o erro no log, mas permitir que o pedido prossiga no banco de dados e na fila de mensagens.
+
+Docstrings e comentários explicativos em português, focando em como os comandos ESC/POS funcionam.
+
+JavaScript usa apenas async/await.
+
+CSS com variáveis (--cafe-escuro, etc.).

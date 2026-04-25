@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Café Aroma — Sistema de Pedidos</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+<body>
+
+  <!-- ══ CABEÇALHO ══════════════════════════════════════════════════ -->
+  <header class="header">
+    <div>
+      <h1 class="header__logo">☕ Café <span>Aroma</span></h1>
+      <p class="header__subtitulo">Cafeteria Inteligente</p>
+    </div>
+    <p class="header__subtitulo" id="data-hora"></p>
+  </header>
+
+  <!-- ══ NAVEGAÇÃO POR ABAS ════════════════════════════════════════ -->
+  <nav class="abas-nav">
+    <button class="aba-btn ativo" data-aba="pdv">🛒 PDV — Pedidos</button>
+    <button class="aba-btn" data-aba="admin">⚙️ Gerenciar Produtos</button>
+  </nav>
+
+  <!-- ══ ABA PDV ═══════════════════════════════════════════════════ -->
+  <main class="container aba-conteudo" id="aba-pdv">
+
+    <!-- ── Coluna esquerda: Cardápio ───────────────────────────── -->
+    <section class="cardapio">
+      <h2 class="secao-titulo">☕ Cardápio</h2>
+
+      <!-- Filtros de categoria -->
+      <div class="filtros" role="group" aria-label="Filtrar por categoria">
+        <button class="filtro-btn ativo" data-categoria="todos">Todos</button>
+        <button class="filtro-btn" data-categoria="bebida">☕ Bebidas</button>
+        <button class="filtro-btn" data-categoria="salgado">🥐 Salgados</button>
+        <button class="filtro-btn" data-categoria="doce">🍰 Doces</button>
+      </div>
+
+      <!-- Grid de produtos (preenchido pelo JavaScript) -->
+      <div class="produtos-grid" id="grid-produtos" aria-live="polite">
+        <p style="color:#999">Carregando cardápio...</p>
+      </div>
+    </section>
+
+    <!-- ── Coluna direita: Carrinho ────────────────────────────── -->
+    <aside class="carrinho-painel" aria-label="Carrinho de compras">
+      <h2 class="secao-titulo">🛒 Seu Pedido</h2>
+
+      <div class="carrinho-lista" id="lista-carrinho" aria-live="polite">
+        <p class="carrinho-vazio">☕ Seu carrinho está vazio</p>
+      </div>
+
+      <label for="observacao" style="font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; display:block;">
+        Observações:
+      </label>
+      <textarea
+        id="observacao"
+        class="campo-observacao"
+        rows="2"
+        placeholder="Ex: Sem açúcar, leite desnatado..."
+        maxlength="200"
+      ></textarea>
+
+      <div class="carrinho-total">
+        <span>Total:</span>
+        <span id="total-valor">R$ 0,00</span>
+      </div>
+
+      <button id="btn-finalizar" class="btn-finalizar" disabled
+        aria-label="Finalizar pedido e imprimir comprovante">
+        Finalizar Pedido
+      </button>
+
+      <p style="font-size:0.72rem; color:#999; text-align:center; margin-top:0.8rem;">
+        🖨️ O comprovante será impresso automaticamente na LUOGAO VS-5890C
+      </p>
+    </aside>
+
+  </main>
+
+  <!-- ══ ABA ADMIN — GERENCIAR PRODUTOS ═══════════════════════════ -->
+  <main class="container-admin aba-conteudo oculto" id="aba-admin">
+
+    <div class="admin-header">
+      <h2 class="secao-titulo">⚙️ Gerenciamento de Produtos</h2>
+      <button class="btn-novo-produto" id="btn-novo-produto">+ Novo Produto</button>
+    </div>
+
+    <!-- Barra de busca -->
+    <div class="admin-busca">
+      <input type="text" id="busca-produto" class="input-busca"
+        placeholder="🔍 Buscar produto por nome ou categoria..." />
+      <select id="filtro-status" class="select-filtro">
+        <option value="todos">Todos os status</option>
+        <option value="ativo">Somente Ativos</option>
+        <option value="inativo">Somente Inativos</option>
+      </select>
+    </div>
+
+    <!-- Tabela de produtos -->
+    <div class="tabela-wrapper">
+      <table class="tabela-produtos" id="tabela-produtos">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Categoria</th>
+            <th>Preço</th>
+            <th>Estoque</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-corpo">
+          <tr><td colspan="7" style="text-align:center;color:#999;padding:2rem">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ══ MODAL — CADASTRO / EDIÇÃO DE PRODUTO ══════════════════════ -->
+  <div class="modal-overlay oculto" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+    <div class="modal">
+      <div class="modal-cabecalho">
+        <h3 class="modal-titulo" id="modal-titulo">Novo Produto</h3>
+        <button class="modal-fechar" id="modal-fechar" aria-label="Fechar">✕</button>
+      </div>
+
+      <form id="form-produto" class="form-produto" novalidate>
+        <input type="hidden" id="campo-id" />
+
+        <div class="form-grid">
+          <!-- Nome -->
+          <div class="form-grupo form-grupo--largo">
+            <label for="campo-nome">Nome do Produto *</label>
+            <input type="text" id="campo-nome" class="form-input" maxlength="100"
+              placeholder="Ex: Café Expresso" required />
+          </div>
+
+          <!-- Preço -->
+          <div class="form-grupo">
+            <label for="campo-preco">Preço (R$) *</label>
+            <input type="number" id="campo-preco" class="form-input" min="0"
+              step="0.01" placeholder="0,00" required />
+          </div>
+
+          <!-- Categoria -->
+          <div class="form-grupo">
+            <label for="campo-categoria">Categoria</label>
+            <select id="campo-categoria" class="form-input">
+              <option value="bebida">☕ Bebida</option>
+              <option value="salgado">🥐 Salgado</option>
+              <option value="doce">🍰 Doce</option>
+              <option value="outros">🛒 Outros</option>
+            </select>
+          </div>
+
+          <!-- Descrição -->
+          <div class="form-grupo form-grupo--largo">
+            <label for="campo-descricao">Descrição</label>
+            <input type="text" id="campo-descricao" class="form-input" maxlength="255"
+              placeholder="Breve descrição do produto" />
+          </div>
+
+          <!-- Estoque -->
+          <div class="form-grupo">
+            <label for="campo-estoque">Qtd. em Estoque</label>
+            <input type="number" id="campo-estoque" class="form-input" min="0"
+              placeholder="0" value="0" />
+          </div>
+
+          <!-- Estoque mínimo -->
+          <div class="form-grupo">
+            <label for="campo-estoque-min">Estoque Mínimo</label>
+            <input type="number" id="campo-estoque-min" class="form-input" min="0"
+              placeholder="5" value="5" />
+          </div>
+
+          <!-- Ativo -->
+          <div class="form-grupo form-grupo--checkbox">
+            <label class="label-checkbox">
+              <input type="checkbox" id="campo-ativo" checked />
+              <span>Produto ativo (visível no cardápio)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Mensagem de erro do formulário -->
+        <p class="form-erro oculto" id="form-erro"></p>
+
+        <div class="modal-rodape">
+          <button type="button" class="btn-cancelar" id="btn-cancelar">Cancelar</button>
+          <button type="submit" class="btn-salvar" id="btn-salvar">💾 Salvar Produto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DE CONFIRMAÇÃO DE EXCLUSÃO ══════════════════════════ -->
+  <div class="modal-overlay oculto" id="modal-excluir-overlay" role="dialog" aria-modal="true">
+    <div class="modal modal--pequeno">
+      <div class="modal-cabecalho">
+        <h3 class="modal-titulo">Confirmar Exclusão</h3>
+        <button class="modal-fechar" id="modal-excluir-fechar">✕</button>
+      </div>
+      <div style="padding: 1.5rem;">
+        <p id="msg-excluir" style="margin-bottom:1.5rem; line-height:1.6;"></p>
+        <div class="modal-rodape">
+          <button class="btn-cancelar" id="btn-excluir-cancelar">Cancelar</button>
+          <button class="btn-excluir-confirmar" id="btn-excluir-confirmar">🗑️ Confirmar Exclusão</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TOAST DE NOTIFICAÇÃO ══════════════════════════════════════ -->
+  <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- ══ SCRIPTS ═══════════════════════════════════════════════════ -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+  <script>
+    // Relógio em tempo real no header
+    function atualizarRelogio() {
+      const agora = new Date();
+      document.getElementById('data-hora').textContent = agora.toLocaleString('pt-BR', {
+        weekday: 'short', day: '2-digit', month: '2-digit',
+        year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
+    atualizarRelogio();
+    setInterval(atualizarRelogio, 1000);
+
+    // Navegação por abas
+    document.querySelectorAll('.aba-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const aba = btn.dataset.aba;
+        document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativo'));
+        document.querySelectorAll('.aba-conteudo').forEach(c => c.classList.add('oculto'));
+        btn.classList.add('ativo');
+        document.getElementById(`aba-${aba}`).classList.remove('oculto');
+        // Recarrega tabela ao entrar no admin
+        if (aba === 'admin') carregarTabelaProdutos();
+      });
+    });
+  </script>
+
+</body>
+</html>
