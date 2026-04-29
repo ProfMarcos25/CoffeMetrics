@@ -12,11 +12,14 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+import time  # <--- Adicione esta linha
+from datetime import datetime
 
 # Tenta importar a biblioteca python-escpos
 # Caso não esteja instalada, o sistema registra o erro mas não interrompe o fluxo
 try:
-    from escpos.printer import Usb, Network, Serial
+    from escpos.printer import Win32Raw, Network
+#    from escpos.printer import Usb, Network, Serial
     ESCPOS_DISPONIVEL = True
 except ImportError:
     ESCPOS_DISPONIVEL = False
@@ -39,41 +42,37 @@ def _carregar_config() -> dict:
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+#POS58
 
 def _conectar_impressora():
     """
-    Cria e retorna a conexão com a impressora LUOGAO VS-5890C.
-
-    A interface pode ser:
-      - USB:     conecta via Vendor ID e Product ID (identificadores do hardware USB)
-      - Network: conecta via IP e porta TCP (impressora em rede Wi-Fi/Ethernet)
-
-    Retorna None se a conexão falhar.
+    Conecta à impressora usando o Spooler do Windows para USB 
+    ou IP para Network.
     """
     config = _carregar_config()
     interface = config.get('PRINTER_INTERFACE', 'USB').upper()
 
     try:
         if interface == 'USB':
-            # Converte os IDs hexadecimais string para inteiros
-            vendor_id = int(config.get('PRINTER_VENDOR_ID', '0x0416'), 16)
-            product_id = int(config.get('PRINTER_PRODUCT_ID', '0x5011'), 16)
-            impressora = Usb(vendor_id, product_id)
+            # Pegamos o NOME da impressora configurado no JSON
+            nome_impressora = config.get('PRINTER_NAME', 'LUOGAO VS-5890C')
+            logger.info(f"Conectando à impressora via Windows Spooler: {nome_impressora}")
+            
+            # Win32Raw utiliza o serviço de impressão nativo do Windows
+            return Win32Raw(nome_impressora)
+
         elif interface == 'NETWORK':
             host = config.get('PRINTER_HOST', '192.168.1.100')
             porta = config.get('PRINTER_PORT', 9100)
-            impressora = Network(host, porta)
+            return Network(host, porta)
+
         else:
-            logger.error(f"Interface de impressora desconhecida: {interface}")
+            logger.error(f"Interface desconhecida: {interface}")
             return None
 
-        return impressora
-
     except Exception as erro:
-        # Se a impressora estiver offline ou desconectada, registra o erro
         logger.error(f"Falha ao conectar à impressora: {erro}")
         return None
-
 
 def _centralizar(texto: str) -> str:
     """
@@ -191,7 +190,7 @@ def gerar_recibo(dados_pedido: dict) -> bool:
         # ── CORTE DO PAPEL ─────────────────────────────────────────
         # feed(4) → avança 4 linhas antes do corte (ESC d 4)
         # cut()   → executa o corte total do papel (GS V 0)
-        impressora.feed(4)
+        impressora.text('\n' * 4) # Pula 4 linhas manualmente
         impressora.cut()
 
         logger.info(f"Recibo do pedido #{pedido_id} impresso com sucesso.")
@@ -201,3 +200,13 @@ def gerar_recibo(dados_pedido: dict) -> bool:
         # Erro durante a impressão → registra mas não interrompe o sistema
         logger.error(f"Erro ao imprimir pedido #{dados_pedido.get('id')}: {erro}")
         return False
+
+    finally:
+        # ISSO É O QUE FAZ IMPRIMIR NA HORA:
+        # Fecha a conexão e força o Windows a soltar o papel
+        if impressora:
+            try:
+                impressora.close()
+                logger.info("Conexão Win32Raw fechada. O papel deve sair agora.")
+            except Exception as e:
+                logger.error(f"Erro ao fechar impressora: {e}")
