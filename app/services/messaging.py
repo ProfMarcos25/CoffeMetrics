@@ -15,13 +15,15 @@ Fluxo:
 import json
 import logging
 import threading
+import pika
 from pathlib import Path
 
 # Tenta importar pika (cliente Python para RabbitMQ)
 try:
-    import pika
+
     PIKA_DISPONIVEL = True
 except ImportError:
+
     PIKA_DISPONIVEL = False
     logging.warning("pika não encontrado. Mensageria RabbitMQ desativada.")
 
