@@ -1,12 +1,10 @@
 {
-  "DATABASE_URI": "postgresql://postgres:6$o#fJ@localhost:5432/cafearoma",
+  "DATABASE_URI": "postgresql://postgres:mister1234@localhost:5433/cafearoma",
   "RABBITMQ_HOST": "localhost",
   "RABBITMQ_PORT": 5672,
   "RABBITMQ_QUEUE": "pedidos_queue",
   "PRINTER_INTERFACE": "USB",
-  "PRINTER_ID": "LUOGAO_VS5890C",
-  "PRINTER_VENDOR_ID": "0x0416",
-  "PRINTER_PRODUCT_ID": "0x5011",
+  "PRINTER_NAME": "POS58", 
   "PRINTER_PAPER_WIDTH": 58,
   "PRINTER_CHARS_PER_LINE": 32,
   "SECRET_KEY": "cafearoma-secret-key-2026"

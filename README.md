@@ -122,6 +122,64 @@ CAFEAROMA/
 | RabbitMQ | **Opcional** — o sistema funciona sem ele |
 | LUOGAO VS-5890C | **Opcional** — impressão desativada se offline |
 
+
+
+### 1.1 Virtualizar Python
+
+```powershell
+py -m venv .venv
+```
+
+### 1.2 Ativar no Ambiente Windows
+
+```powershell
+.venv\Scripts\activate
+```
+
+
+```powershell
+(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& c:SEU_DIRETORIO_AQUI\projetos\IAMetrics\.venv\Scripts\Activate.ps1)
+```
+
+### 1.3 comfigurar biblioteca 
+
+-- Baixar o arquivo do site libusb
+https://github.com/libusb/libusb/releases
+
+
+Instale a biblioteca no seu ambiente virtual:
+Com o terminal aberto e o seu .venv ativado, rode:
+
+```Bash
+pip install pyusb
+```
+
+Instale o "motor" (libusb-1.0.dll):
+O Python não consegue falar com o USB sozinho no Windows. Você precisa desse arquivo:
+
+
+Baixe o arquivo libusb-1.0.27.7z (ou a versão mais recente) no site oficial do libusb.
+
+Abra a pasta VS2015-x64/dll dentro do arquivo baixado.
+
+Copie o arquivo libusb-1.0.dll.
+
+Cole esse arquivo dentro da pasta Scripts do seu ambiente virtual: .venv\Scripts\ (onde está o seu python.exe).
+
+Configuração de Driver (Zadig):
+Se mesmo assim não funcionar, o Windows está protegendo o driver original da impressora.
+
+Baixe o Zadig.
+
+Vá em Options > List All Devices.
+
+Selecione sua impressora LUOGAO na lista.
+
+Mude o driver para WinUSB ou libusb-win32 e clique em Replace Driver.
+
+Aviso: Isso fará com que a impressora pare de aparecer como uma impressora comum no Windows e passe a ser um "Dispositivo USB Genérico" que só o seu script Python conseguirá controlar.
+
+
 ### 2. Instalar dependências
 
 ```powershell
