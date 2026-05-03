@@ -1,8 +1,8 @@
 {
-  "DATABASE_URI": "postgresql://postgres:mister1234@localhost:5433/cafearoma",
-  "RABBITMQ_HOST": "localhost",
-  "RABBITMQ_PORT": 5672,
-  "RABBITMQ_QUEUE": "pedidos_queue",
+  "DATABASE_URI": "postgresql://postgres:6$o#fJ@localhost:5432/cafearoma",
+  "TELEGRAM_BOT_TOKEN": "8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ",
+  "TELEGRAM_CHAT_ID": "634033523",
+
   "PRINTER_INTERFACE": "USB",
   "PRINTER_NAME": "POS58", 
   "PRINTER_PAPER_WIDTH": 58,

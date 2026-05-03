@@ -4,10 +4,11 @@ Define as rotas da API REST para criação e consulta de pedidos.
 """
 
 import logging
+import threading
 from flask import Blueprint, request, jsonify
 from app import db
 from app.models.models import Pedido, ItemPedido, Produto, Estoque
-from app.services import messaging
+from app.services import printer_service, telegram_service
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +20,8 @@ pedidos_bp = Blueprint('pedidos', __name__, url_prefix='/api/pedidos')
 def criar_pedido():
     """
     POST /api/pedidos
-    Recebe um pedido do front-end, salva no banco de dados,
-    envia para a fila RabbitMQ e imprime o cupom na LUOGAO VS-5890C.
+    Recebe um pedido do front-end, salva no banco de dados
+    e imprime o cupom na LUOGAO VS-5890C.
 
     Corpo da requisição (JSON):
         {
@@ -88,17 +89,22 @@ def criar_pedido():
         novo_pedido.total = total
         db.session.commit()
 
-        # ── 4. Montar dicionário para fila e impressora ──────────────
+        # ── 4. Montar dicionário e disparar serviços assíncronos ────────
         dados_pedido = novo_pedido.to_dict()
 
-        # ── 5. Enviar para fila RabbitMQ + imprimir cupom ────────────
-        # O messaging.py dispara a impressão em thread paralela
-        fila_ok = messaging.enviar_pedido_fila(dados_pedido)
+        # Impressão térmica em thread separada
+        threading.Thread(
+            target=printer_service.gerar_recibo,
+            args=(dados_pedido,),
+            daemon=True
+        ).start()
+
+        # Notificação via bot do Telegram em thread separada
+        telegram_service.enviar_notificacao_async(dados_pedido)
 
         return jsonify({
             'mensagem': 'Pedido criado com sucesso!',
-            'pedido': dados_pedido,
-            'fila_rabbitmq': fila_ok
+            'pedido': dados_pedido
         }), 201
 
     except Exception as e:
