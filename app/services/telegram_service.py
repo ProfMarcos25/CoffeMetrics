@@ -30,23 +30,28 @@ from typing import Any
 # Usa requests para chamar a API HTTP do Telegram (sem biblioteca extra)
 try:
     import requests
+    requests.get('https://api.telegram.org')  # Testa conexão com o Telegram
+    logging.info("Requests: biblioteca disponível e Telegram acessível.")
     REQUESTS_DISPONIVEL = True
 except ImportError:
-    REQUESTS_DISPONIVEL = False
-    logging.warning("requests não encontrado. Notificações Telegram desativadas.")
+    logging.warning("requests não instalado ou encontrado. Notificações Telegram desativadas.")
 
 logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path(__file__).resolve().parents[2] / 'data' / 'config.json'
 
-# URL base da API do Telegram — substitui <TOKEN> pelo token real em tempo de execução
-TELEGRAM_API_URL = "https://api.telegram.org/bot8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ/sendMessage"
-
-
 def _carregar_config() -> dict[str, Any]:
     """Lê as configurações do arquivo data/config.json."""
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         return json.load(f)
+
+
+config = _carregar_config()
+tokenTelegram = config.get('TELEGRAM_BOT_TOKEN', '').strip()
+chat_id = config.get('TELEGRAM_CHAT_ID', '').strip()
+
+# URL base da API do Telegram — substitui <TOKEN> pelo token real em tempo de execução
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{tokenTelegram}/sendMessage"
 
 
 def _formatar_mensagem(dados_pedido: dict[str, Any]) -> str:
@@ -114,9 +119,7 @@ def enviar_notificacao(dados_pedido: dict[str, Any]) -> bool:
 
     A falha NÃO interrompe o fluxo do pedido — apenas registra no log.
     """
-    if not REQUESTS_DISPONIVEL:
-        logger.warning("Notificação Telegram ignorada: requests não instalado.")
-        return False
+
 
     try:
         config = _carregar_config()
@@ -132,6 +135,12 @@ def enviar_notificacao(dados_pedido: dict[str, Any]) -> bool:
 
         url = TELEGRAM_API_URL.format(token=token)
         mensagem = _formatar_mensagem(dados_pedido)
+
+        if not REQUESTS_DISPONIVEL:
+          logger.warning("Notificação Telegram ignorada: requests não instalado.")
+          import requests
+          logger.warning("Instalando Requests... (pip install requests)")
+          return False
 
         # Payload da API sendMessage do Telegram
         payload = {
