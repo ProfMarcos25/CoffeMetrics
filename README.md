@@ -1,6 +1,6 @@
 # ☕ Café Aroma — Sistema de Pedidos Inteligente
 
-> **Versão:** 2.0 · **Atualizado em:** Abril/2026
+> **Versão:** 2.2 · **Atualizado em:** Maio/2026
 
 Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados** e **Desenvolvimento de Sistemas** (1º ano). Une um PDV funcional (Front-end), motor de IA preditiva (Back-end), gerenciamento completo de produtos com CRUD e automação de hardware (Impressão Térmica ESC/POS).
 
@@ -28,7 +28,7 @@ Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados*
 - Filtros rápidos: **Todos · Bebidas · Salgados · Doces**
 - Carrinho de compras com controle de quantidade (+/−)
 - Campo de observações por pedido
-- Botão **Finalizar Pedido** — grava no banco, envia à fila RabbitMQ e imprime cupom
+- Botão **Finalizar Pedido** — grava no banco e imprime cupom automaticamente
 - Feedback em tempo real com notificações toast
 - Relógio ao vivo no cabeçalho
 
@@ -46,6 +46,11 @@ Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados*
 - Previsão de demanda por produto com **Regressão Linear** (scikit-learn)
 - Ranking dos produtos mais vendidos
 
+### 📲 Notificações via Telegram
+- A cada pedido finalizado, uma mensagem formatada é enviada automaticamente ao bot configurado
+- Envia em thread separada (não bloqueia a resposta da API)
+- Fallback: se o token/chat_id não estiver configurado, o pedido prossegue normalmente
+
 ### 🖨️ Impressão Térmica
 - Cupom ESC/POS na **LUOGAO VS-5890C** (58mm / 32 colunas)
 - QR Code com o ID do pedido
@@ -62,10 +67,11 @@ Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados*
 | ORM | Flask-SQLAlchemy | 3.1.1 |
 | Banco de Dados | PostgreSQL | 14+ |
 | Driver DB | psycopg2-binary | 2.9.9 |
-| Mensageria | RabbitMQ + pika | 1.3.2 |
 | Hardware | python-escpos (ESC/POS) | 3.1 |
 | IA / ML | scikit-learn · numpy · pandas | 1.5.0 |
 | QR Code | qrcode | 8.2 |
+| Notificações | requests (Telegram Bot API) | 2.31+ |
+| Configuração | python-dotenv | 1.0+
 
 ---
 
@@ -77,26 +83,27 @@ CAFEAROMA/
 ├── seed.py                         ← Popula o banco com produtos de exemplo
 ├── requirements.txt                ← Dependências Python
 ├── README.md
+├── .env                            ← Variáveis de ambiente reais (não versionar!)
 ├── .env.example                    ← Modelo de variáveis de ambiente
 │
 ├── data/
-│   ├── config.json                 ← Configurações: DB, RabbitMQ, Impressora
+│   ├── config.json                 ← Configurações de fallback (impressora, etc.)
 │   └── schema.sql                  ← Script DDL do PostgreSQL
 │
 └── app/
-    ├── __init__.py                 ← Application Factory do Flask + SQLAlchemy
+    ├── __init__.py                 ← Application Factory: carrega .env → config.json
     │
     ├── models/
     │   └── models.py               ← ORM: Usuario, Produto, Pedido, ItemPedido, Estoque
     │
     ├── controllers/
-    │   ├── pedidos_controller.py   ← GET/POST /api/pedidos
+    │   ├── pedidos_controller.py   ← GET/POST /api/pedidos + notificação Telegram
     │   ├── produtos_controller.py  ← CRUD completo /api/produtos
     │   └── analytics_controller.py ← /api/analytics/...
     │
     ├── services/
-    │   ├── printer_service.py      ← Impressão ESC/POS → LUOGAO VS-5890C
-    │   ├── messaging.py            ← Fila RabbitMQ + thread de impressão
+    │   ├── printer_service.py      ← Impressão ESC/POS → LUOGAO VS-5890C (thread)
+    │   ├── telegram_service.py     ← Notificações via Telegram Bot API (thread)
     │   └── analytics.py            ← Regressão Linear (scikit-learn)
     │
     ├── static/
@@ -119,7 +126,6 @@ CAFEAROMA/
 |----------|-----------|
 | Python 3.10+ | `py --version` |
 | PostgreSQL 14+ | Servidor rodando localmente |
-| RabbitMQ | **Opcional** — o sistema funciona sem ele |
 | LUOGAO VS-5890C | **Opcional** — impressão desativada se offline |
 
 ### 2. Instalar dependências
@@ -138,19 +144,37 @@ psql -U postgres -c "CREATE DATABASE cafearoma;"
 psql -U postgres -d cafearoma -f data/schema.sql
 ```
 
-### 4. Configurar `data/config.json`
+### 4. Configurar variáveis de ambiente
 
-```json
-{
-  "DATABASE_URI": "postgresql://postgres:SUA_SENHA@localhost:5432/cafearoma",
-  "RABBITMQ_HOST": "localhost",
-  "RABBITMQ_PORT": 5672,
-  "RABBITMQ_QUEUE": "pedidos_queue",
-  "PRINTER_INTERFACE": "USB",
-  "PRINTER_VENDOR_ID": "0x0416",
-  "PRINTER_PRODUCT_ID": "0x5011"
-}
+Copie o arquivo modelo e preencha com seus dados:
+
+```powershell
+copy .env.example .env
 ```
+
+Edite o `.env` com seus valores reais:
+
+```dotenv
+# Flask
+SECRET_KEY=troque-por-uma-chave-secreta-forte-aqui
+
+# PostgreSQL
+DATABASE_URI=postgresql://postgres:SUA_SENHA@localhost:5432/cafearoma
+
+# Telegram Bot (opcional — notificações a cada pedido)
+TELEGRAM_BOT_TOKEN=SEU_TOKEN_DO_BOTFATHER
+TELEGRAM_CHAT_ID=SEU_CHAT_ID
+
+# Impressora Térmica
+PRINTER_INTERFACE=USB
+PRINTER_VENDOR_ID=0x0416
+PRINTER_PRODUCT_ID=0x5011
+```
+
+> **Prioridade de configuração:** variáveis do `.env` sempre sobrescrevem `data/config.json`.
+> O `config.json` serve apenas como fallback para quem preferir não usar `.env`.
+
+> ⚠️ **Nunca versione o arquivo `.env`** — ele já está no `.gitignore`.
 
 ### 5. (Opcional) Popular o banco com produtos de exemplo
 
@@ -208,7 +232,7 @@ usuarios ──< pedidos ──< itens_pedido >── produtos ──── esto
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| `POST` | `/api/pedidos` | Cria pedido → grava no banco + fila + impressão |
+| `POST` | `/api/pedidos` | Cria pedido → grava no banco + impressão térmica + notificação Telegram |
 | `GET` | `/api/pedidos` | Lista todos os pedidos |
 | `GET` | `/api/pedidos/<id>` | Detalha um pedido |
 
@@ -258,6 +282,50 @@ Acessível pela aba **⚙️ Gerenciar Produtos** na interface principal.
 | Estoque atual | Inteiro ≥ 0 | — |
 | Estoque mínimo | Inteiro ≥ 0 (gera alerta ⚠️) | — |
 | Ativo | Checkbox (visível no cardápio) | — |
+
+---
+
+## 📲 Notificações via Telegram Bot
+
+A cada pedido finalizado, o `telegram_service.py` envia uma mensagem formatada em HTML para um chat ou grupo do Telegram.
+
+### Como configurar
+
+1. Abra o Telegram e converse com **@BotFather**
+2. Digite `/newbot` e siga as instruções para obter o **token**
+3. Envie uma mensagem ao bot, depois acesse:
+   ```
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+   para obter o **chat_id** (pode ser negativo para grupos)
+4. Preencha no `.env`:
+   ```dotenv
+   TELEGRAM_BOT_TOKEN=8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ
+   TELEGRAM_CHAT_ID=634033523
+   ```
+ 5. Obtenha o Id no `link`:
+   ```dotenv
+   https://api.telegram.org/bot8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ/getUpdates
+   ```
+   
+
+### Exemplo de mensagem enviada
+
+```
+☕ Novo Pedido — Café Aroma
+
+🔢 Pedido Nº: 42
+📅 25/04/2026 14:30
+
+📋 Itens:
+  • Café Expresso x2 — R$ 11,00
+  • Pão de Queijo x3 — R$ 13,50
+
+💰 Total: R$ 24,50
+📝 Obs: Sem açúcar
+```
+
+> **Fallback:** se `TELEGRAM_BOT_TOKEN` ou `TELEGRAM_CHAT_ID` não estiverem configurados, o pedido é processado normalmente sem enviar a notificação.
 
 ---
 
@@ -365,7 +433,7 @@ py seed.py
 
 ## 📐 Padrões de Código
 
-- **Python:** docstrings em português, comentários explicativos sobre ESC/POS e RabbitMQ
+- **Python:** docstrings em português, comentários explicativos sobre ESC/POS e Telegram Bot API
 - **JavaScript:** exclusivamente `async/await` (sem `.then()` ou callbacks)
 - **CSS:** variáveis custom (`--cafe-escuro`, `--cafe-bege`, etc.), design responsivo
 - **Flask:** padrão *Application Factory* + *Blueprints* por domínio

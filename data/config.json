@@ -1,8 +1,7 @@
 {
   "DATABASE_URI": "postgresql://postgres:6$o#fJ@localhost:5432/cafearoma",
-  "RABBITMQ_HOST": "localhost",
-  "RABBITMQ_PORT": 5672,
-  "RABBITMQ_QUEUE": "pedidos_queue",
+  "TELEGRAM_BOT_TOKEN": "SEU_TOKEN_AQUI",
+  "TELEGRAM_CHAT_ID": "SEU_CHAT_ID_AQUI",
   "PRINTER_INTERFACE": "USB",
   "PRINTER_ID": "LUOGAO_VS5890C",
   "PRINTER_VENDOR_ID": "0x0416",
