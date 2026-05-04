@@ -5,7 +5,159 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Café Aroma — Sistema de Pedidos</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+  <style>
+    /* ── Analytics ── */
+    .container-analytics {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+    }
+    .analytics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+    .btn-refresh {
+      background: var(--cafe-escuro, #4E342E);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .45rem 1rem;
+      font-size: .85rem;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-refresh:hover { opacity: .8; }
+    /* Grade de KPIs */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      padding: 1.4rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.12);
+    }
+    .kpi-icone {
+      font-size: 2.2rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .kpi-info {
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
+    }
+    .kpi-label {
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: #888;
+    }
+    .kpi-valor {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--cafe-escuro, #4E342E);
+      line-height: 1.15;
+    }
+    .kpi-detalhe {
+      font-size: .72rem;
+      color: #aaa;
+    }
+    /* Secao mais vendidos */
+    .analytics-secao {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+      padding: 1.4rem 1.4rem 1rem;
+    }
+    .analytics-subtitulo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--cafe-escuro, #4E342E);
+      margin: 0 0 1rem;
+    }
+    .mv-item {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+      padding: .55rem 0;
+      border-bottom: 1px solid #f0ebe6;
+    }
+    .mv-item:last-child { border-bottom: none; }
+    .mv-rank {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--cafe-escuro, #4E342E);
+      color: #fff;
+      font-size: .75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .mv-nome { flex: 1; font-weight: 600; font-size: .9rem; }
+    .mv-qtd  { font-size: .82rem; color: #888; }
+    .mv-valor { font-weight: 700; color: var(--cafe-escuro, #4E342E); font-size: .9rem; }
+    .kpi-card--loading .kpi-valor { color: #ccc; }
+    /* Linha inferior: Mais Vendidos + Grafico */
+    .analytics-linha-inferior {
+      display: grid;
+      grid-template-columns: 1fr 3fr;
+      gap: 1.2rem;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .analytics-linha-inferior { grid-template-columns: 1fr; }
+    }
+    .analytics-secao--mv { min-width: 0; }
+    .analytics-secao--chart { min-width: 0; }
+    .chart-wrapper {
+      position: relative;
+      height: 260px;
+      margin-top: .5rem;
+    }
+    .chart-legenda {
+      font-size: .78rem;
+      color: #888;
+      margin: -.3rem 0 .5rem;
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+    }
+    .legenda-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .legenda-dot--real { background: #4E342E; }
+    .legenda-dot--ia   { background: #FF8F00; }
+    .chart-nota {
+      font-size: .7rem;
+      color: #bbb;
+      margin-top: .6rem;
+      font-style: italic;
+    }
+  </style>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x2615;</text></svg>" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -22,6 +174,7 @@
   <nav class="abas-nav">
     <button class="aba-btn ativo" data-aba="pdv">🛒 PDV — Pedidos</button>
     <button class="aba-btn" data-aba="admin">⚙️ Gerenciar Produtos</button>
+    <button class="aba-btn" data-aba="analytics">📊 Analytics</button>
   </nav>
 
   <!-- ══ ABA PDV ═══════════════════════════════════════════════════ -->
@@ -122,7 +275,86 @@
 
   </main>
 
-  <!-- ══ MODAL — CADASTRO / EDIÇÃO DE PRODUTO ══════════════════════ -->
+  <!-- ══ ABA ANALYTICS ════════════════════════════════════ -->
+  <main class="container-analytics aba-conteudo oculto" id="aba-analytics">
+
+    <div class="analytics-header">
+      <h2 class="secao-titulo">&#128202; Dashboard Inteligente — Visão Geral</h2>
+      <button class="btn-refresh" id="btn-refresh-analytics" title="Atualizar dados">&#8635; Atualizar</button>
+    </div>
+
+    <!-- Paineis KPI -->
+    <div class="kpi-grid">
+
+      <!-- Venda Diária Total -->
+      <div class="kpi-card" id="kpi-venda-diaria">
+        <div class="kpi-icone">&#128181;</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Venda Diária Total</span>
+          <span class="kpi-valor" id="val-venda-diaria">R$ --</span>
+          <span class="kpi-detalhe" id="det-venda-diaria">pedidos de hoje</span>
+        </div>
+      </div>
+
+      <!-- Previsão de Pedidos -->
+      <div class="kpi-card" id="kpi-previsao">
+        <div class="kpi-icone">&#129302;</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Previsão de Pedidos</span>
+          <span class="kpi-valor" id="val-previsao">-- pedidos</span>
+          <span class="kpi-detalhe" id="det-previsao">estimativa para amanhã</span>
+        </div>
+      </div>
+
+      <!-- Ticket Médio -->
+      <div class="kpi-card" id="kpi-ticket">
+        <div class="kpi-icone">&#127881;</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Ticket Médio</span>
+          <span class="kpi-valor" id="val-ticket">R$ --</span>
+          <span class="kpi-detalhe" id="det-ticket">por pedido hoje</span>
+        </div>
+      </div>
+
+      <!-- Fluxo de Pessoas -->
+      <div class="kpi-card" id="kpi-fluxo">
+        <div class="kpi-icone">&#128101;</div>
+        <div class="kpi-info">
+          <span class="kpi-label">Fluxo de Pessoas</span>
+          <span class="kpi-valor" id="val-fluxo">-- clientes</span>
+          <span class="kpi-detalhe" id="det-fluxo">atendidos hoje</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Linha inferior: Mais Vendidos + Previsao de Demanda -->
+    <div class="analytics-linha-inferior">
+
+      <!-- Mais Vendidos (mesma largura do KPI Fluxo de Pessoas) -->
+      <div class="analytics-secao analytics-secao--mv">
+        <h3 class="analytics-subtitulo">&#127942; Mais Vendidos</h3>
+        <div class="mais-vendidos-lista" id="mais-vendidos-lista">
+          <p style="color:#999;text-align:center;padding:1.5rem">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- Previsao de Demanda Horario (Real vs IA) -->
+      <div class="analytics-secao analytics-secao--chart">
+        <h3 class="analytics-subtitulo">&#129302; Previsão de Demanda Horário (Real vs IA)</h3>
+        <p class="chart-legenda">
+          <span class="legenda-dot legenda-dot--real"></span> Real &nbsp;
+          <span class="legenda-dot legenda-dot--ia"></span> Estimativa IA
+        </p>
+        <div class="chart-wrapper">
+          <canvas id="chart-demanda" aria-label="Gráfico de previsão de demanda horária"></canvas>
+        </div>
+        <p class="chart-nota">* IA baseada na média histórica por faixa horária dos pedidos registrados.</p>
+      </div>
+
+    </div>
+
+  </main>
   <div class="modal-overlay oculto" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
     <div class="modal">
       <div class="modal-cabecalho">
@@ -245,8 +477,176 @@
         document.getElementById(`aba-${aba}`).classList.remove('oculto');
         // Recarrega tabela ao entrar no admin
         if (aba === 'admin') carregarTabelaProdutos();
+        // Carrega analytics ao entrar na aba
+        if (aba === 'analytics') carregarAnalytics();
       });
     });
+
+    // ── Analytics ────────────────────────────────────────────────
+    async function carregarAnalytics() {
+      // Marca KPIs como carregando
+      ['val-venda-diaria','val-previsao','val-ticket','val-fluxo'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = '...'; el.closest('.kpi-card').classList.add('kpi-card--loading'); }
+      });
+
+      try {
+        // Busca pedidos e mais vendidos em paralelo
+        const [resPedidos, resMaisVendidos] = await Promise.all([
+          fetch('/api/pedidos'),
+          fetch('/api/analytics/mais-vendidos?top=5')
+        ]);
+
+        const pedidos       = resPedidos.ok       ? await resPedidos.json()       : [];
+        const maisVendidos  = resMaisVendidos.ok   ? await resMaisVendidos.json()  : [];
+
+        // Filtra pedidos de hoje
+        const hoje = new Date().toISOString().slice(0, 10);
+        const pedidosHoje = Array.isArray(pedidos)
+          ? pedidos.filter(p => p.criado_em && p.criado_em.startsWith(hoje))
+          : [];
+
+        // KPI: Venda Diária Total
+        const totalDia = pedidosHoje.reduce((s, p) => s + parseFloat(p.total || 0), 0);
+        document.getElementById('val-venda-diaria').textContent =
+          'R$ ' + totalDia.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('det-venda-diaria').textContent =
+          pedidosHoje.length + ' pedido(s) hoje';
+
+        // KPI: Ticket Médio
+        const ticket = pedidosHoje.length ? totalDia / pedidosHoje.length : 0;
+        document.getElementById('val-ticket').textContent =
+          'R$ ' + ticket.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        document.getElementById('det-ticket').textContent = 'por pedido hoje';
+
+        // KPI: Fluxo de Pessoas (= nº de pedidos únicos do dia)
+        document.getElementById('val-fluxo').textContent = pedidosHoje.length + ' clientes';
+        document.getElementById('det-fluxo').textContent = 'atendidos hoje';
+
+        // KPI: Previsão de Pedidos (média dos últimos 7 dias)
+        const ultimos7 = {};
+        (Array.isArray(pedidos) ? pedidos : []).forEach(p => {
+          if (!p.criado_em) return;
+          const dia = p.criado_em.slice(0, 10);
+          ultimos7[dia] = (ultimos7[dia] || 0) + 1;
+        });
+        const diasComDados = Object.values(ultimos7);
+        const mediaDiaria = diasComDados.length
+          ? Math.round(diasComDados.reduce((a,b) => a+b, 0) / diasComDados.length)
+          : 0;
+        document.getElementById('val-previsao').textContent = mediaDiaria + ' pedidos';
+        document.getElementById('det-previsao').textContent = 'estimativa para amanhã (média 7d)';
+
+        // Remove estado de carregando
+        document.querySelectorAll('.kpi-card--loading').forEach(c => c.classList.remove('kpi-card--loading'));
+
+        // ── Mais Vendidos ──────────────────────────────────────────
+        const lista = document.getElementById('mais-vendidos-lista');
+        if (Array.isArray(maisVendidos) && maisVendidos.length) {
+          lista.innerHTML = maisVendidos.map((mv, i) => `
+            <div class="mv-item">
+              <span class="mv-rank">${i+1}</span>
+              <span class="mv-nome">${mv.nome || mv.produto_nome || 'Produto'}</span>
+              <span class="mv-qtd">${mv.total_vendido || mv.quantidade || 0} un.</span>
+            </div>`).join('');
+        } else {
+          lista.innerHTML = '<p style="color:#999;text-align:center;padding:1rem">Sem dados ainda.</p>';
+        }
+
+        // ── Gráfico: Previsão de Demanda Horária (Real vs IA) ─────
+        // Agrupa pedidos de hoje por hora (0-23)
+        const porHora = Array(24).fill(0);
+        pedidosHoje.forEach(p => {
+          if (p.criado_em) {
+            const h = new Date(p.criado_em).getHours();
+            if (!isNaN(h)) porHora[h]++;
+          }
+        });
+
+        // Média histórica por hora (todos os pedidos disponíveis)
+        const mediaHora = Array(24).fill(0);
+        const contagemDias = {};
+        (Array.isArray(pedidos) ? pedidos : []).forEach(p => {
+          if (!p.criado_em) return;
+          const d = new Date(p.criado_em);
+          const dia = d.toISOString().slice(0,10);
+          const h   = d.getHours();
+          if (!isNaN(h)) {
+            mediaHora[h]++;
+            contagemDias[dia] = true;
+          }
+        });
+        const totalDias = Math.max(Object.keys(contagemDias).length, 1);
+        const iaHora = mediaHora.map(v => parseFloat((v / totalDias).toFixed(2)));
+
+        // Exibe apenas horas das 6h às 22h para melhor leitura
+        const horas    = Array.from({length:17}, (_,i) => `${i+6}h`);
+        const realSlice = porHora.slice(6, 23);
+        const iaSlice   = iaHora.slice(6, 23);
+
+        const ctx = document.getElementById('chart-demanda');
+        if (ctx) {
+          if (window._chartDemanda) window._chartDemanda.destroy();
+          window._chartDemanda = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: horas,
+              datasets: [
+                {
+                  label: 'Real (hoje)',
+                  data: realSlice,
+                  backgroundColor: 'rgba(78,52,46,0.75)',
+                  borderRadius: 6,
+                  order: 2
+                },
+                {
+                  label: 'Estimativa IA',
+                  data: iaSlice,
+                  type: 'line',
+                  borderColor: '#FF8F00',
+                  backgroundColor: 'rgba(255,143,0,0.12)',
+                  borderWidth: 2.5,
+                  pointRadius: 4,
+                  pointBackgroundColor: '#FF8F00',
+                  tension: 0.4,
+                  fill: true,
+                  order: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y} pedido(s)`
+                  }
+                }
+              },
+              scales: {
+                x: { grid: { display: false } },
+                y: {
+                  beginAtZero: true,
+                  ticks: { precision: 0 },
+                  grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+              }
+            }
+          });
+        }
+
+      } catch (err) {
+        console.error('Erro ao carregar analytics:', err);
+        document.getElementById('mais-vendidos-lista').innerHTML =
+          '<p style="color:#c0392b;text-align:center;padding:1rem">Erro ao carregar dados.</p>';
+      }
+    }
+
+    // Botão de atualizar
+    document.getElementById('btn-refresh-analytics')?.addEventListener('click', carregarAnalytics);
   </script>
 
 </body>

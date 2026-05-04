@@ -213,20 +213,36 @@ copy .env.example .env
 Edite o `.env` com seus valores reais:
 
 ```dotenv
-# Flask
-SECRET_KEY=troque-por-uma-chave-secreta-forte-aqui
+# =============================================================
+# Variáveis de ambiente do projeto Café Aroma — ARQUIVO REAL
+# NÃO envie este arquivo para o repositório!
+# Ele já deve estar listado no .gitignore
+# =============================================================
 
-# PostgreSQL
-DATABASE_URI=postgresql://postgres:SUA_SENHA@localhost:5432/cafearoma
+# ── Flask ──────────────────────────────────────────────────────
+FLASK_ENV=development
+FLASK_DEBUG=1
+SECRET_KEY=cafearoma-secret-key-2026
 
-# Telegram Bot (opcional — notificações a cada pedido)
-TELEGRAM_BOT_TOKEN=SEU_TOKEN_DO_BOTFATHER
-TELEGRAM_CHAT_ID=SEU_CHAT_ID
+# ── PostgreSQL ─────────────────────────────────────────────────
+DATABASE_URI=postgresql://postgres:6$o#fJ@localhost:5432/cafearoma
 
-# Impressora Térmica
+# ── Telegram Bot ───────────────────────────────────────────────
+# 1. Crie um bot com @BotFather no Telegram e cole o token abaixo
+# 2. Envie uma mensagem ao bot e acesse:
+#    https://api.telegram.org/bot<TOKEN>/getUpdates
+#    para obter o CHAT_ID (pode ser negativo para grupos)
+TELEGRAM_BOT_TOKEN=8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ
+TELEGRAM_CHAT_ID=634033523
+
+# ── Impressora Térmica ─────────────────────────────────────────
 PRINTER_INTERFACE=USB
 PRINTER_VENDOR_ID=0x0416
 PRINTER_PRODUCT_ID=0x5011
+# Usado apenas quando PRINTER_INTERFACE=NETWORK:
+# PRINTER_HOST=192.168.1.100
+# PRINTER_PORT=9100
+
 ```
 
 > **Prioridade de configuração:** variáveis do `.env` sempre sobrescrevem `data/config.json`.
