@@ -2,7 +2,7 @@
 
 > **Versão:** 2.2 · **Atualizado em:** Maio/2026
 
-Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados** e **Desenvolvimento de Sistemas** (1º ano). Une um PDV funcional (Front-end), motor de IA preditiva (Back-end), gerenciamento completo de produtos com CRUD e automação de hardware (Impressão Térmica ESC/POS).
+Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados** e **Desenvolvimento de Sistemas** (2º ano). Une um PDV funcional (Front-end), motor de IA preditiva (Back-end), gerenciamento completo de produtos com CRUD e automação de hardware (Impressão Térmica ESC/POS).
 
 ---
 
@@ -74,6 +74,10 @@ Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados*
 | Configuração | python-dotenv | 1.0+
 
 ---
+
+## 📁 ARQUITETURA 
+<img width="703" height="598" alt="image" src="https://github.com/user-attachments/assets/33d68fdd-40a1-4bf8-a282-184b861abb17" />
+
 
 ## 📁 Estrutura de Pastas
 
@@ -160,32 +164,6 @@ Com o terminal aberto e o seu .venv ativado, rode:
 pip install pyusb
 ```
 
-Instale o "motor" (libusb-1.0.dll):
-O Python não consegue falar com o USB sozinho no Windows. Você precisa desse arquivo:
-
-
-Baixe o arquivo libusb-1.0.27.7z (ou a versão mais recente) no site oficial do libusb.
-
-Abra a pasta VS2015-x64/dll dentro do arquivo baixado.
-
-Copie o arquivo libusb-1.0.dll.
-
-Cole esse arquivo dentro da pasta Scripts do seu ambiente virtual: .venv\Scripts\ (onde está o seu python.exe).
-
-Configuração de Driver (Zadig):
-Se mesmo assim não funcionar, o Windows está protegendo o driver original da impressora.
-
-Baixe o Zadig.
-
-Vá em Options > List All Devices.
-
-Selecione sua impressora LUOGAO na lista.
-
-Mude o driver para WinUSB ou libusb-win32 e clique em Replace Driver.
-
-Aviso: Isso fará com que a impressora pare de aparecer como uma impressora comum no Windows e passe a ser um "Dispositivo USB Genérico" que só o seu script Python conseguirá controlar.
-
-
 ### 2. Instalar dependências
 
 ```powershell
@@ -194,17 +172,95 @@ py -m pip install -r requirements.txt
 
 ### 3. Criar o banco de dados
 
-```powershell
-# Cria o banco
-psql -U postgres -c "CREATE DATABASE cafearoma;"
+--> No PostegreSql , Abra o pgadmin
+1. Procure PgAdmin no Computador
+<img width="865" height="757" alt="image" src="https://github.com/user-attachments/assets/60715683-6f2b-435d-867a-9f6f1f606a9e" />
 
-# Cria as tabelas
-psql -U postgres -d cafearoma -f data/schema.sql
+
+1.1 
+<img width="749" height="595" alt="image" src="https://github.com/user-attachments/assets/f44364b4-8911-45a8-9c51-194cd4dd117f" />
+
+
+
+2. Acesse o Postegree recente a senha de acesso é 1234
+
+   <img width="545" height="399" alt="image" src="https://github.com/user-attachments/assets/fe86c4c6-49f0-4932-b8fc-d6998dce5c0e" />
+2.1 clique com o Botao direito em Database
+   <img width="638" height="377" alt="image" src="https://github.com/user-attachments/assets/62061b60-2cbd-49ff-98b2-f1d043e11f5d" />
+2.2 Insira o nome do seu Database
+   <img width="696" height="550" alt="image" src="https://github.com/user-attachments/assets/b95ea6fd-6112-490c-8301-d194cf949cb5" />
+2.2 Clique em Save
+   <img width="698" height="552" alt="image" src="https://github.com/user-attachments/assets/1144808f-394d-42c4-9e41-a82883f7d965" />
+3. Clique no Database Criado com o botao direito:
+<img width="495" height="498" alt="image" src="https://github.com/user-attachments/assets/eba19eae-3018-4632-9540-bcfa390dacdd" />
+3.1 Clique no Database Criado com o botao direito e selecione QueryTols:
+   <img width="413" height="486" alt="image" src="https://github.com/user-attachments/assets/2b56cb1a-6711-4f28-8e47-f2738072c6cc" />
+3.2 Adicione os Scripts do arquivo schema.sql
+```bash
+
+-- ── Tabela: usuarios ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS usuarios (
+    id          SERIAL PRIMARY KEY,
+    nome        VARCHAR(100)  NOT NULL,
+    email       VARCHAR(150)  NOT NULL UNIQUE,
+    senha_hash  VARCHAR(256)  NOT NULL,
+    perfil      VARCHAR(20)   DEFAULT 'cliente',
+    criado_em   TIMESTAMP     DEFAULT NOW()
+);
+
+-- ── Tabela: produtos ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS produtos (
+    id          SERIAL PRIMARY KEY,
+    nome        VARCHAR(100)  NOT NULL,
+    descricao   TEXT,
+    preco       NUMERIC(10,2) NOT NULL,
+    categoria   VARCHAR(50),
+    ativo       BOOLEAN       DEFAULT TRUE,
+    imagem_url  VARCHAR(255),
+    criado_em   TIMESTAMP     DEFAULT NOW()
+);
+
+-- ── Tabela: pedidos ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS pedidos (
+    id          SERIAL PRIMARY KEY,
+    usuario_id  INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
+    status      VARCHAR(30)   DEFAULT 'pendente',
+    total       NUMERIC(10,2) NOT NULL DEFAULT 0,
+    observacao  TEXT,
+    criado_em   TIMESTAMP     DEFAULT NOW()
+);
+
+-- ── Tabela: itens_pedido ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS itens_pedido (
+    id              SERIAL PRIMARY KEY,
+    pedido_id       INTEGER       NOT NULL REFERENCES pedidos(id)  ON DELETE CASCADE,
+    produto_id      INTEGER       NOT NULL REFERENCES produtos(id) ON DELETE RESTRICT,
+    quantidade      INTEGER       NOT NULL DEFAULT 1,
+    preco_unitario  NUMERIC(10,2) NOT NULL
+);
+
+-- ── Tabela: estoque ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS estoque (
+    id                 SERIAL PRIMARY KEY,
+    produto_id         INTEGER NOT NULL UNIQUE REFERENCES produtos(id) ON DELETE CASCADE,
+    quantidade         INTEGER NOT NULL DEFAULT 0,
+    quantidade_minima  INTEGER DEFAULT 5,
+    atualizado_em      TIMESTAMP DEFAULT NOW()
+);
+
+-- ── Índices para performance ─────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_pedidos_criado_em   ON pedidos(criado_em DESC);
+CREATE INDEX IF NOT EXISTS idx_itens_pedido_id     ON itens_pedido(pedido_id);
+CREATE INDEX IF NOT EXISTS idx_itens_produto_id    ON itens_pedido(produto_id);
+CREATE INDEX IF NOT EXISTS idx_produtos_categoria  ON produtos(categoria);
 ```
+
+4
+
 
 ### 4. Configurar variáveis de ambiente
 
-Copie o arquivo modelo e preencha com seus dados:
+Copie o arquivo .env abaixo:
 
 ```powershell
 copy .env.example .env
@@ -225,13 +281,11 @@ FLASK_DEBUG=1
 SECRET_KEY=cafearoma-secret-key-2026
 
 # ── PostgreSQL ─────────────────────────────────────────────────
-DATABASE_URI=postgresql://postgres:6$o#fJ@localhost:5432/cafearoma
+DATABASE_URI=postgresql://postgres:1234@localhost:5432/cafearoma
 
 # ── Telegram Bot ───────────────────────────────────────────────
 # 1. Crie um bot com @BotFather no Telegram e cole o token abaixo
 # 2. Envie uma mensagem ao bot e acesse:
-#    https://api.telegram.org/bot<TOKEN>/getUpdates
-#    para obter o CHAT_ID (pode ser negativo para grupos)
 TELEGRAM_BOT_TOKEN=8756218296:AAGjYY8tCs0rmFY0d_4dNsixZxWIL-ffIwQ
 TELEGRAM_CHAT_ID=634033523
 
