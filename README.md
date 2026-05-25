@@ -76,6 +76,7 @@ Projeto pedagógico desenvolvido para alunos de Técnico em **Ciência de Dados*
 ---
 
 ## 📁 ARQUITETURA 
+
 <img width="703" height="598" alt="image" src="https://github.com/user-attachments/assets/33d68fdd-40a1-4bf8-a282-184b861abb17" />
 
 
@@ -174,6 +175,7 @@ py -m pip install -r requirements.txt
 
 --> No PostegreSql , Abra o pgadmin
 1. Procure PgAdmin no Computador
+
 <img width="865" height="757" alt="image" src="https://github.com/user-attachments/assets/60715683-6f2b-435d-867a-9f6f1f606a9e" />
 
 
@@ -185,16 +187,35 @@ py -m pip install -r requirements.txt
 2. Acesse o Postegree recente a senha de acesso é 1234
 
    <img width="545" height="399" alt="image" src="https://github.com/user-attachments/assets/fe86c4c6-49f0-4932-b8fc-d6998dce5c0e" />
+
 2.1 clique com o Botao direito em Database
+
+
    <img width="638" height="377" alt="image" src="https://github.com/user-attachments/assets/62061b60-2cbd-49ff-98b2-f1d043e11f5d" />
+
+   
 2.2 Insira o nome do seu Database
+
+
    <img width="696" height="550" alt="image" src="https://github.com/user-attachments/assets/b95ea6fd-6112-490c-8301-d194cf949cb5" />
+
+   
 2.2 Clique em Save
+
+
    <img width="698" height="552" alt="image" src="https://github.com/user-attachments/assets/1144808f-394d-42c4-9e41-a82883f7d965" />
+
+   
 3. Clique no Database Criado com o botao direito:
+
+
 <img width="495" height="498" alt="image" src="https://github.com/user-attachments/assets/eba19eae-3018-4632-9540-bcfa390dacdd" />
+
+
 3.1 Clique no Database Criado com o botao direito e selecione QueryTols:
+
    <img width="413" height="486" alt="image" src="https://github.com/user-attachments/assets/2b56cb1a-6711-4f28-8e47-f2738072c6cc" />
+
 3.2 Adicione os Scripts do arquivo schema.sql
 ```bash
 
