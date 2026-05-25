@@ -276,7 +276,11 @@ CREATE INDEX IF NOT EXISTS idx_itens_produto_id    ON itens_pedido(produto_id);
 CREATE INDEX IF NOT EXISTS idx_produtos_categoria  ON produtos(categoria);
 ```
 
-4
+4. EXECUTE A QUERY NO PLAY
+
+
+   <img width="748" height="443" alt="image" src="https://github.com/user-attachments/assets/64c3e8f3-fa93-48ba-a886-dd0b496c5496" />
+
 
 
 ### 4. Configurar variáveis de ambiente
