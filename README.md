@@ -579,7 +579,7 @@ py seed.py
 | Categoria | Produtos |
 |-----------|---------|
 | ☕ Bebidas | Café Expresso, Cappuccino, Latte, Café com Leite, Chocolate Quente, Suco de Laranja |
-| 🥐 Salgados | Pão de Queijo, Coxinha, Croissant |
+| 🥐 Salgados | Pão de Queijo, Coxinha, fatias de baguete |
 | 🍰 Doces | Bolo de Cenoura, Fatia de Cheesecake, Brigadeiro |
 
 ---
