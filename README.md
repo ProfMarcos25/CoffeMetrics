@@ -586,7 +586,8 @@ py seed.py
 
 ## 📐 Padrões de Código
 
-## Alterações
+## Alterações da ray
+
 
 - **Python:** docstrings em português, comentários explicativos sobre ESC/POS e Telegram Bot API
 - **JavaScript:** exclusivamente `async/await` (sem `.then()` ou callbacks)
