@@ -587,6 +587,7 @@ py seed.py
 ## 📐 Padrões de Código
 
 ## Alterações da ray
+tabelas de preço
 
 
 - **Python:** docstrings em português, comentários explicativos sobre ESC/POS e Telegram Bot API
